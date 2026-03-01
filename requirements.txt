@@ -14,7 +14,5 @@ moviepy
 gender-guesser
 deep-translator
 pdfplumber
-pdf2image
-Pillow
 google-auth
 google-api-python-client
