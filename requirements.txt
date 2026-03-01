@@ -11,15 +11,10 @@ langdetect
 edge-tts
 gTTS
 moviepy
-spacy
-transformers
-torch --index-url https://download.pytorch.org/whl/cpu
-torchvision --index-url https://download.pytorch.org/whl/cpu
 gender-guesser
 deep-translator
 pdfplumber
 pdf2image
-pytesseract
 Pillow
 google-auth
 google-api-python-client

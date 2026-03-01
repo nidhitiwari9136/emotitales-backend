@@ -7,7 +7,7 @@ import json
 from django.conf import settings
 import os
 from .ai_utils import multilingual_summarize,  generate_summary_audio
-from .pdf_utils import extract_text_from_pdf, extract_text_from_image
+from .pdf_utils import extract_text_from_pdf
 from .storygen.story_engine import generate_story
 from .storygen.audio_engine import generate_full_audio_sync
 from .models import Story, SummaryHistory,LibraryStory
