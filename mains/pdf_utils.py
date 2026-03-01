@@ -1,45 +1,63 @@
-import os
 import pdfplumber
-import pytesseract
 import re
-from PIL import Image
-
-# 1. Path Auto-Config
-if os.name == 'nt':
-    pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+import os
 
 def clean_text(text):
-    """Clean extra spaces and junk characters"""
-    if not text: return ""
-    # Remove CID artifacts
+    """
+    Cleans junk characters, CID artifacts, and fixes whitespace.
+    Works for Hindi, English, and other regional languages.
+    """
+    if not text:
+        return ""
+
+    # 1. Remove PDF encoding artifacts like (cid:123)
     text = re.sub(r"\(cid:\d+\)", "", text)
-    # Remove non-printable characters
-    text = "".join(ch for ch in text if ch.isprintable() or ch in "\n\t")
-    # Simplify whitespace
+
+    # 2. Fix whitespace: Replace multiple spaces/newlines with a single space
     text = re.sub(r'\s+', ' ', text)
+
+    # 3. Keep only printable characters (removes control codes that break JSON)
+    text = "".join(ch for ch in text if ch.isprintable() or ch in "\n\t")
+
     return text.strip()
 
 def extract_text_from_pdf(file):
-    """Optimized for Long PDFs (20+ Pages)"""
+    """
+    Fast & Memory-efficient extraction for long PDFs (20-100+ pages).
+    No OCR, no heavy RAM usage.
+    """
+    # Reset file pointer to start
     file.seek(0)
-    text = ""
+    extracted_text = []
 
-    # Strategy 1: Digital Stream (Sabse Fast & Memory Efficient)
     try:
         with pdfplumber.open(file) as pdf:
-            print(f"📄 Extracting text from {len(pdf.pages)} pages...")
-            for page in pdf.pages:
-                page_text = page.extract_text()
-                if page_text:
-                    text += page_text + "\n"
-    except Exception as e:
-        print(f"❌ Digital extraction error: {e}")
+            total_pages = len(pdf.pages)
+            print(f"📄 Processing Digital PDF: {total_pages} pages detected.")
 
-    # Strategy 2: OCR Fallback (Sirf tab use karo jab digital fail ho jaye)
-    # WARNING: 20+ pages ka OCR Render Free Tier par Memory Crash kar sakta hai!
-    if not text.strip() or len(text.strip()) < 50:
-        print("⚠️ Text not found. Digital PDF check failed. Check if it's a scanned image.")
-        # Agar aap Docker use nahi kar rahe, toh Render pe ye line error degi.
-        # Aap yahan user ko error dikha sakte ho: "Scanned PDFs not supported on Free Tier"
-    
-    return clean_text(text)
+            for i, page in enumerate(pdf.pages):
+                # Extract text from each page
+                page_content = page.extract_text()
+                if page_content:
+                    extracted_text.append(page_content)
+                
+                # Progress log for large files (visible in Render logs)
+                if (i + 1) % 10 == 0:
+                    print(f"✅ Extracted {i + 1}/{total_pages} pages...")
+
+        full_text = "\n".join(extracted_text)
+        return clean_text(full_text)
+
+    except Exception as e:
+        print(f"❌ PDF Extraction Failed: {str(e)}")
+        return ""
+
+def extract_text_from_txt(file):
+    """Simple extraction for .txt files"""
+    try:
+        file.seek(0)
+        content = file.read().decode("utf-8")
+        return clean_text(content)
+    except Exception as e:
+        print(f"❌ TXT Extraction Failed: {str(e)}")
+        return ""
