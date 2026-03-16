@@ -6,7 +6,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from django.conf import settings
 import os
-from .pdf_utils import extract_text_from_pdf
+from .pdf_utils import extract_text_from_pdf, extract_text_from_txt
 from .models import Story, SummaryHistory, LibraryStory
 from .storygen.story_matcher import find_similar_stories
 from .storygen.translator import translate_story
@@ -88,53 +88,80 @@ def logout_user(request):
 # ============================================================
 @csrf_exempt
 def generate_summary(request):
+
     if request.method != "POST":
-        return JsonResponse({"error": "Only POST allowed"}, status=405)
+        return JsonResponse({"error": "POST only"}, status=405)
+
     try:
-        # 🔥 LAZY IMPORT: Load only when needed
+
         from .ai_utils import multilingual_summarize, generate_summary_audio
 
         mode = request.POST.get("mode", "text")
+
         text = None
         file = request.FILES.get("file")
 
         if file:
-            print("UPLOADED FILE:", file.name, file.size)
+
+            print("Uploaded file:", file.name)
+
             ext = os.path.splitext(file.name.lower())[1]
+
             if ext == ".pdf":
+
                 text = extract_text_from_pdf(file)
-            elif ext in [".png", ".jpg", ".jpeg", ".webp"]:
-                # Keep original logic (make sure this is in ai_utils or pdf_utils if needed)
-                from .ai_utils import extract_text_from_image 
-                text = extract_text_from_image(file)
+
+            elif ext == ".txt":
+
+                text = extract_text_from_txt(file)
+
             else:
-                return JsonResponse({"error": "Unsupported file type"}, status=400)
+                return JsonResponse({"error": "Unsupported file"}, status=400)
+
         else:
+
             text = request.POST.get("text")
 
         if not text or not text.strip():
-            return JsonResponse({"error": "No input provided"}, status=400)
+
+            return JsonResponse({"error": "No input"}, status=400)
+
+        print("Text length:", len(text))
+
+        # -------- SUMMARIZE -------- #
 
         summary, language = multilingual_summarize(text)
+
         history = SummaryHistory.objects.create(
-            input_text=text,
+            input_text=text[:5000],
             language=language,
-            summary=summary,
+            summary=summary
         )
 
         response = {"summary": summary}
-        if mode in ["audio"]:
-            audio_path = generate_summary_audio(summary)
-            history.audio_file.name = audio_path.replace("media/", "")
-            history.save()
-            response["audio"] = request.build_absolute_uri(
-                settings.MEDIA_URL + "audio/" + os.path.basename(audio_path)
-            )
-        return JsonResponse(response)
-    except Exception as e:
-        print("🔥 BACKEND ERROR:", e)
-        return JsonResponse({"error": str(e)}, status=500)
 
+        if mode == "audio":
+
+            audio_path = generate_summary_audio(summary)
+
+            if audio_path:
+
+                history.audio_file.name = audio_path.replace("media/", "")
+                history.save()
+
+                response["audio"] = request.build_absolute_uri(
+                    settings.MEDIA_URL + os.path.basename(audio_path)
+                )
+
+        return JsonResponse(response)
+
+    except Exception as e:
+
+        import traceback
+        traceback.print_exc()
+
+        return JsonResponse({"error": str(e)}, status=500)
+        
 # ============================================================
 # STORY GENERATION API
 # ============================================================

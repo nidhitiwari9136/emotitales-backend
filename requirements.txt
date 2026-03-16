@@ -9,10 +9,11 @@ groq
 google-genai
 langdetect
 edge-tts
-gTTS
 moviepy
+gTTS
 gender-guesser
 deep-translator
 pdfplumber
+pydub
 google-auth
 google-api-python-client
