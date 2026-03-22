@@ -234,8 +234,32 @@ def generate_story_audio(request):
 
 @csrf_exempt
 def get_all_library_stories(request):
-    if request.method != "GET":
-        return JsonResponse({"error": "GET only"}, status=400)
-    stories = LibraryStory.objects.all()[:30]
+    # 1. Database se stories uthao
+    stories = LibraryStory.objects.all()
+
+    # 2. Agar database khali hai, toh JSON se load karo
+    if not stories.exists():
+        # Aapka path: mains/storygen/data/stories.json
+        json_path = os.path.join(settings.BASE_DIR, 'mains', 'storygen', 'data', 'stories.json')
+        
+        if os.path.exists(json_path):
+            try:
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    stories_data = json.load(f)
+                    for item in stories_data:
+                        # Database mein entry create karo
+                        LibraryStory.objects.get_or_create(
+                            title=item.get('title'),
+                            defaults={
+                                'category': item.get('category', 'General'),
+                                'content_en': item.get('content_en', item.get('content', ''))
+                            }
+                        )
+                # Data load hone ke baad fir se stories fetch karo
+                stories = LibraryStory.objects.all()
+            except Exception as e:
+                print(f"Error loading stories: {e}")
+
+    # 3. Frontend ko data bhejo
     data = [{"id": s.id, "title": s.title, "category": s.category} for s in stories]
     return JsonResponse({"stories": data})
