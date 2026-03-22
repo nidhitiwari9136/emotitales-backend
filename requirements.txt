@@ -17,3 +17,5 @@ pdfplumber
 pydub
 google-auth
 google-api-python-client
+dj-database-url
+psycopg2-binary
