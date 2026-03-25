@@ -9,7 +9,7 @@ groq
 google-genai
 langdetect
 edge-tts
-moviepy
+moviepy==1.0.3
 gTTS
 gender-guesser
 deep-translator
