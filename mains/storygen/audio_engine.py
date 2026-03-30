@@ -7,15 +7,22 @@ import hashlib
 import random
 import base64
 from gtts import gTTS
+from django.conf import settings
 from langdetect import detect
 from moviepy.editor import AudioFileClip, concatenate_audioclips
 from google import genai
 from dotenv import load_dotenv
+import os
+if os.name == 'nt': 
+    os.environ["IMAGEIO_FFMPEG_EXE"] = r"C:\Users\Nidhi Tiwari\Downloads\ffmpeg-8.0.1-essentials_build\ffmpeg-8.0.1-essentials_build\bin\ffmpeg.exe"
+else:
+    
+    os.environ["IMAGEIO_FFMPEG_EXE"] = imageio_ffmpeg.get_ffmpeg_exe()
 
 load_dotenv()
 
 character_voice_memory = {}
-BASE_AUDIO = "media/audio"
+BASE_AUDIO = os.path.join(settings.MEDIA_ROOT, "audio")
 os.makedirs(BASE_AUDIO, exist_ok=True)
 
 ELEVEN_KEY = os.getenv("ELEVENLABS_API_KEY")

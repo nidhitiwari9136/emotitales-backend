@@ -23,25 +23,43 @@ def google_login(request):
     try:
         data = json.loads(request.body)
         token = data.get("token")
+        
+        # 1. Client ID ko Environment Variable se uthao
+        CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID") 
+        
         if not token:
             return JsonResponse({"error": "Token missing"}, status=400)
 
+        # 2. Token verify karo
         idinfo = id_token.verify_oauth2_token(
             token,
             google_requests.Request(),
-            "YOUR_GOOGLE_CLIENT_ID"
+            CLIENT_ID
         )
+        
         email = idinfo.get("email")
-        if not email:
-            return JsonResponse({"error": "Email not found"}, status=400)
+        first_name = idinfo.get("given_name", "")
+        last_name = idinfo.get("family_name", "")
 
+        # 3. User create ya fetch karo
         user, created = User.objects.get_or_create(
-            username=email,
-            defaults={"email": email}
+            email=email,
+            defaults={
+                "username": email, # Username hamesha unique hona chaiye
+                "first_name": first_name,
+                "last_name": last_name
+            }
         )
+        
+        # Django session login
         user.backend = "django.contrib.auth.backends.ModelBackend"
         login(request, user)
-        return JsonResponse({"message": "Google login successful", "username": user.username})
+        
+        return JsonResponse({
+            "message": "Google login successful", 
+            "username": user.username,
+            "email": user.email
+        })
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
         
