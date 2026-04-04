@@ -1,6 +1,10 @@
 import pdfplumber
 import re
+import pytesseract
+from PIL import Image
 
+
+# ---------------- CLEAN TEXT ---------------- #
 
 def clean_text(text):
     """
@@ -23,10 +27,12 @@ def clean_text(text):
     return text.strip()
 
 
+# ---------------- PDF TEXT EXTRACTION ---------------- #
+
 def extract_text_from_pdf(file):
     """
     Extract text from PDF using pdfplumber.
-    Works with large PDFs (100+ pages).
+    Works with large PDFs.
     """
 
     file.seek(0)
@@ -58,6 +64,66 @@ def extract_text_from_pdf(file):
         print("❌ PDF extraction error:", str(e))
         return ""
 
+
+# ---------------- OCR FALLBACK ---------------- #
+
+def extract_text_with_fallback(file):
+    """
+    Hybrid extraction:
+    1. Try pdfplumber
+    2. If weak/empty → OCR fallback (Tesseract)
+    """
+
+    # Step 1: Normal extraction
+    text = extract_text_from_pdf(file)
+
+    # Step 2: Check if fallback needed
+    if not text or len(text.strip()) < 100:
+        print("⚠️ Using OCR fallback...")
+
+        file.seek(0)  # IMPORTANT: Reset file pointer
+
+        ocr_text = ""
+
+        try:
+            with pdfplumber.open(file) as pdf:
+
+                total_pages = len(pdf.pages)
+                print("🔍 OCR on pages:", total_pages)
+
+                for i, page in enumerate(pdf.pages):
+
+                    try:
+                        # Convert page to image
+                        img = page.to_image(resolution=300)
+                        pil_img = img.original
+
+                        # OCR (multilingual)
+                        page_text = pytesseract.image_to_string(
+                            pil_img,
+                            lang="eng+hin+mar"
+                        )
+
+                        if page_text:
+                            ocr_text += page_text + "\n"
+
+                    except Exception as page_error:
+                        print(f"⚠️ OCR page {i+1} error:", page_error)
+
+                    # Progress log
+                    if (i + 1) % 5 == 0:
+                        print(f"🔍 OCR processed: {i+1}/{total_pages}")
+
+            return clean_text(ocr_text)
+
+        except Exception as e:
+            print("❌ OCR fallback failed:", str(e))
+            return text  # fallback to original
+
+    return text
+
+
+# ---------------- TXT EXTRACTION ---------------- #
 
 def extract_text_from_txt(file):
     """

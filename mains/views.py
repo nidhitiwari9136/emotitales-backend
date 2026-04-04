@@ -159,17 +159,12 @@ def generate_summary(request):
         response = {"summary": summary}
 
         if mode == "audio":
-
             audio_path = generate_summary_audio(summary)
-
             if audio_path:
-
                 history.audio_file.name = audio_path.replace("media/", "")
                 history.save()
 
-                response["audio"] = request.build_absolute_uri(
-                    settings.MEDIA_URL + os.path.basename(audio_path)
-                )
+                response["audio"] = settings.MEDIA_URL + "audio/" + os.path.basename(audio_path)
 
         return JsonResponse(response)
 
@@ -238,13 +233,14 @@ def generate_story_audio(request):
     if request.method != "POST":
         return JsonResponse({"error": "POST only"}, status=405)
     try:
-        # 🔥 LAZY IMPORT
         from .storygen.audio_engine import generate_full_audio_sync
         data = json.loads(request.body)
         story_text = data.get("story")
         audio_path = generate_full_audio_sync(story_text)
         filename = os.path.basename(audio_path)
-        audio_url = request.build_absolute_uri(settings.MEDIA_URL + "audio/" + filename)
+        
+        # ✅ Ise bhi simple path mein badlo
+        audio_url = settings.MEDIA_URL + "audio/" + filename
         return JsonResponse({"audio": audio_url})
     except Exception as e:
         print("AUDIO ERROR:", e)
