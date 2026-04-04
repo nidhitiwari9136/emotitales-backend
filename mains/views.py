@@ -239,7 +239,6 @@ def generate_story_audio(request):
         audio_path = generate_full_audio_sync(story_text)
         filename = os.path.basename(audio_path)
         
-        # ✅ Ise bhi simple path mein badlo
         audio_url = settings.MEDIA_URL + "audio/" + filename
         return JsonResponse({"audio": audio_url})
     except Exception as e:
@@ -251,9 +250,9 @@ def get_all_library_stories(request):
     # 1. Database se stories uthao
     stories = LibraryStory.objects.all()
 
-    # 2. Agar database khali hai, toh JSON se load karo
+    # 2. Agar database khali hai, toh JSON se load karega
     if not stories.exists():
-        # Aapka path: mains/storygen/data/stories.json
+        # Apna path: mains/storygen/data/stories.json
         json_path = os.path.join(settings.BASE_DIR, 'mains', 'storygen', 'data', 'stories.json')
         
         if os.path.exists(json_path):
@@ -261,7 +260,7 @@ def get_all_library_stories(request):
                 with open(json_path, 'r', encoding='utf-8') as f:
                     stories_data = json.load(f)
                     for item in stories_data:
-                        # Database mein entry create karo
+                        # Database mein entry create karega
                         LibraryStory.objects.get_or_create(
                             title=item.get('title'),
                             defaults={
@@ -269,7 +268,7 @@ def get_all_library_stories(request):
                                 'content_en': item.get('content_en', item.get('content', ''))
                             }
                         )
-                # Data load hone ke baad fir se stories fetch karo
+                # Data load hone ke baad fir se stories fetch karega
                 stories = LibraryStory.objects.all()
             except Exception as e:
                 print(f"Error loading stories: {e}")
@@ -277,3 +276,16 @@ def get_all_library_stories(request):
     # 3. Frontend ko data bhejo
     data = [{"id": s.id, "title": s.title, "category": s.category} for s in stories]
     return JsonResponse({"stories": data})
+
+@csrf_exempt
+def translate_existing_story(request):
+    try:
+        data = json.loads(request.body)
+        text = data.get("text")
+        language = data.get("language")
+
+        translated = translate_story(text, language)
+
+        return JsonResponse({"story": translated})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)

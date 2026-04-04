@@ -16,11 +16,20 @@ def translate_story(text, language):
         client = genai.Client(api_key=GEMINI_KEY)
 
         prompt = f"""
-Translate this story into {language}.
-Keep it emotional, natural, and child-friendly.
+        You are a strict translator.
 
-{text}
-"""
+        Translate the following story EXACTLY into {language}.
+
+        RULES:
+        - Do NOT change story meaning
+        - Do NOT add new content
+        - Do NOT rewrite
+        - Keep same length and structure
+        - Only translate language
+
+        Story:
+        {text}
+        """
 
         response = client.models.generate_content(
             model="gemini-flash-latest",

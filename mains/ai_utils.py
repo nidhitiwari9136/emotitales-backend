@@ -52,6 +52,37 @@ def split_text(text, size=MAX_CHUNK_SIZE):
 
     return chunks
 
+def offline_summary(text):
+
+    text = text.replace("\n", " ")
+
+    # Sentence split
+    sentences = re.split(r'(?<=[.!?])\s+', text)
+
+    # Word frequency
+    words = re.findall(r'\w+', text.lower())
+    freq = {}
+
+    for word in words:
+        if len(word) > 2:   # ignore small words
+            freq[word] = freq.get(word, 0) + 1
+
+    # Sentence scoring
+    sentence_scores = {}
+
+    for sentence in sentences:
+        score = 0
+        for word in re.findall(r'\w+', sentence.lower()):
+            if word in freq:
+                score += freq[word]
+        sentence_scores[sentence] = score
+
+    # Top 2 sentences select
+    sorted_sentences = sorted(sentence_scores, key=sentence_scores.get, reverse=True)
+
+    summary = " ".join(sorted_sentences[:2])
+
+    return summary.strip()
 
 # ---------------- SAFE RESPONSE PARSER ---------------- #
 
@@ -98,7 +129,73 @@ def call_gemini(prompt):
     raise Exception("All Gemini models failed")
 
 
+
+
+
 # ---------------- MAIN SUMMARIZER ---------------- #
+
+# def multilingual_summarize(text):
+
+#     if not text or len(text.strip()) < 50:
+#         raise Exception("Content too short for summarization")
+
+#     lang_code = detect_language(text)
+#     lang_name = LANG_MAP.get(lang_code, "English")
+
+#     chunks = split_text(text)
+
+#     summaries = []
+
+#     for i, chunk in enumerate(chunks):
+
+#         print(f"📄 Processing chunk {i+1}/{len(chunks)}")
+
+#         prompt = f"""
+# You are an expert document summarizer.
+
+# Summarize the following content in {lang_name}.
+
+# Rules:
+# - Keep the important ideas
+# - Remove repetition
+# - Write clearly and concisely
+# - Use small paragraphs
+
+# CONTENT:
+# {chunk}
+# """
+
+#         try:
+#             summary = call_gemini(prompt)
+#         except Exception as e:
+#             print("⚠️ Gemini chunk failed:", e)
+#             summary = offline_summary(chunk)
+
+#         if summary:
+#             summaries.append(summary)
+
+#     if not summaries:
+#         raise Exception("Failed to generate summaries")
+
+#     # ---------------- FINAL SUMMARY ---------------- #
+
+#     combined_text = "\n".join(summaries)
+
+#     final_prompt = f"""
+# Create a final concise summary in {lang_name}
+# based on the following summaries.
+
+# TEXT:
+# {combined_text}
+# """
+
+#     try:
+#         final_summary = call_gemini(final_prompt)
+#     except Exception as e:
+#         print("⚠️ Gemini final failed:", e)
+#         final_summary = offline_summary(combined_text)
+
+#     return final_summary, lang_code
 
 def multilingual_summarize(text):
 
@@ -109,52 +206,48 @@ def multilingual_summarize(text):
     lang_name = LANG_MAP.get(lang_code, "English")
 
     chunks = split_text(text)
-
     summaries = []
 
+    # 🔥 CHUNK LEVEL
     for i, chunk in enumerate(chunks):
 
         print(f"📄 Processing chunk {i+1}/{len(chunks)}")
 
         prompt = f"""
-You are an expert document summarizer.
+Summarize the following content in {lang_name}:
 
-Summarize the following content in {lang_name}.
-
-Rules:
-- Keep the important ideas
-- Remove repetition
-- Write clearly and concisely
-- Use small paragraphs
-
-CONTENT:
 {chunk}
 """
 
-        summary = call_gemini(prompt)
+        try:
+            summary = call_gemini(prompt)
+        except Exception as e:
+            print("⚠️ Gemini chunk failed:", e)
+            summary = offline_summary(chunk)
 
         if summary:
             summaries.append(summary)
 
     if not summaries:
-        raise Exception("Failed to generate summaries")
+        print("⚠️ Using full offline summary")
+        return offline_summary(text), lang_code
 
-    # ---------------- FINAL SUMMARY ---------------- #
-
+    # 🔥 FINAL SUMMARY
     combined_text = "\n".join(summaries)
 
     final_prompt = f"""
-Create a final concise summary in {lang_name}
-based on the following summaries.
+Create a final concise summary in {lang_name}:
 
-TEXT:
 {combined_text}
 """
 
-    final_summary = call_gemini(final_prompt)
+    try:
+        final_summary = call_gemini(final_prompt)
+    except Exception as e:
+        print("⚠️ Gemini final failed:", e)
+        final_summary = offline_summary(combined_text)
 
     return final_summary, lang_code
-
 
 # ---------------- AUDIO GENERATION ---------------- #
 

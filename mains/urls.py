@@ -11,4 +11,5 @@ urlpatterns = [
     path("open-story/", views.open_library_story),
     path("audio/", views.generate_story_audio),
     path("google-login/", views.google_login),
+    path("translate/", views.translate_existing_story),
 ]
