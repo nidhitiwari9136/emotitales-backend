@@ -204,6 +204,13 @@ def generate_or_fetch_story(request):
         # 2️⃣ Generate new story
         story_text = generate_story("English", emotion, word_limit, prompt)
 
+        Story.objects.create(
+            prompt=prompt,
+            language=language,
+            story_text=story_text,
+            sentiment=emotion
+        )
+
         # 🔥 Translation
         if language.lower() != "english":
             story_text = translate_story(story_text, language)

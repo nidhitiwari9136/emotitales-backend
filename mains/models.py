@@ -17,12 +17,11 @@ class SummaryHistory(models.Model):
     emotion = models.CharField(max_length=20)
 
     audio_file = models.FileField(upload_to="audio/", null=True, blank=True)
-    video_file = models.FileField(upload_to="video/", null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
 class Story(models.Model):
-    prompt = models.TextField(unique=True)
+    prompt = models.CharField(max_length=255, unique=True)
     language = models.CharField(max_length=20)
 
     story_text = models.TextField()
@@ -31,10 +30,6 @@ class Story(models.Model):
 
     audio_file = models.FileField(
         upload_to="audio/", blank=True, null=True
-    )
-
-    video_file = models.FileField(
-        upload_to="video/", blank=True, null=True
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
