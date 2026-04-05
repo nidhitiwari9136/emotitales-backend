@@ -239,7 +239,9 @@ def generate_story_audio(request):
         audio_path = generate_full_audio_sync(story_text)
         filename = os.path.basename(audio_path)
         
-        audio_url = settings.MEDIA_URL + "audio/" + filename
+        audio_url = request.build_absolute_uri(
+            settings.MEDIA_URL + "audio/" + filename
+        )
         return JsonResponse({"audio": audio_url})
     except Exception as e:
         print("AUDIO ERROR:", e)

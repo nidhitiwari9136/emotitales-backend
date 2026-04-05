@@ -4,8 +4,8 @@ from google import genai
 from langdetect import detect
 from dotenv import load_dotenv
 
-load_dotenv()
-
+# load_dotenv()
+load_dotenv(override=True)
 # ---------------- CONFIG ---------------- #
 
 MODEL_PRIORITY = [

@@ -13,8 +13,8 @@ from google import genai
 from dotenv import load_dotenv
 import edge_tts
 
-load_dotenv()
-
+# load_dotenv()
+load_dotenv(override=True)
 # ---------------- CONFIG ---------------- #
 
 BASE_AUDIO = os.path.join(settings.MEDIA_ROOT, "audio")
@@ -28,9 +28,9 @@ client = genai.Client(api_key=GEMINI_KEY)
 # ---------------- VOICE MAP ---------------- #
 
 VOICE_IDS = {
-    "narrator": "Rachel",
-    "male": "pNInz6obpgnuM0sLNojD",
-    "female": "EXAVITQu4vr4xnSDxMaL",
+    "narrator": "3QbFa3xryzmSTr7TTInl",  # Rachel voice ID
+    "male": "txk8uOzZ0iCh0B9mFSRG",
+    "female": "3QbFa3xryzmSTr7TTInl",
 }
 
 #  FULL MULTILINGUAL SUPPORT
